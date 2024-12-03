@@ -1,18 +1,17 @@
-# Usa una imagen base oficial de Python
-FROM python:3.12-slim
+# Imagen base
+FROM python:3.11-slim
 
-# Establece el directorio de trabajo dentro del contenedor
+# Establecer el directorio de trabajo
 WORKDIR /app
 
-# Copia los archivos de la aplicación al contenedor
-COPY . /app
+# Copiar los archivos del proyecto
+COPY . .
 
-# Instala las dependencias necesarias
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+# Instalar dependencias
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Expone el puerto en el que se ejecutará la aplicación
+# Exponer el puerto para la aplicación
 EXPOSE 8000
 
-# Comando para ejecutar la aplicación
-CMD ["python", "main.py"]
+# Comando para iniciar el servidor
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

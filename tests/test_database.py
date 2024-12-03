@@ -1,51 +1,49 @@
 import pytest
 from sqlalchemy import inspect
-from services.database import engine, SessionLocal, Interaction, init_db
+from services.database import engine, SessionLocal, Interaction
 
-def test_engine_connection():
+def test_database_connection():
     """
     Verifica que se puede conectar al motor de la base de datos.
     """
     try:
         with engine.connect() as connection:
-            assert connection is not None, "La conexión al motor falló."
+            assert connection is not None, "La conexión a la base de datos falló."
     except Exception as e:
-        pytest.fail(f"Error al conectar al motor: {e}")
+        pytest.fail(f"Error al conectar a la base de datos: {e}")
 
-def test_create_interaction_table():
+def test_table_exists():
     """
-    Verifica que la tabla 'interactions' puede ser creada.
+    Verifica que la tabla 'interactions' existe en la base de datos.
     """
-    try:
-        # Inicializa la base de datos y las tablas
-        init_db()
-        
-        # Usa el inspector para verificar la tabla
-        inspector = inspect(engine)
-        tables = inspector.get_table_names()
-        assert "interactions" in tables, "La tabla 'interactions' no fue creada."
-    except Exception as e:
-        pytest.fail(f"Error al crear la tabla 'interactions': {e}")
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    assert "interactions" in tables, "La tabla 'interactions' no existe en la base de datos."
 
-def test_interaction_insert_and_query():
+def test_insert_and_query_record():
     """
-    Verifica que se pueden insertar y consultar datos en la tabla 'interactions'.
+    Verifica que se pueden insertar y recuperar registros en la tabla 'interactions'.
     """
+    # Crear una sesión de prueba
+    session = SessionLocal()
+
+    # Crear un registro de prueba
+    new_interaction = Interaction(
+        prompt="¿Cuál es la capital de Francia?",
+        response="La capital de Francia es París.",
+    )
     try:
-        # Inserta un registro de prueba
-        session = SessionLocal()
-        test_data = Interaction(
-            prompt="Test Prompt",
-            response="Test Response"
-        )
-        session.add(test_data)
+        session.add(new_interaction)
         session.commit()
 
-        # Consulta el registro insertado
-        query_result = session.query(Interaction).filter_by(prompt="Test Prompt").first()
-        session.close()
-
-        assert query_result is not None, "No se encontró el registro insertado."
-        assert query_result.response == "Test Response", "Los datos no coinciden con lo esperado."
+        # Consultar el registro de prueba
+        result = session.query(Interaction).filter_by(prompt="¿Cuál es la capital de Francia?").first()
+        assert result is not None, "No se pudo recuperar el registro insertado."
+        assert result.response == "La capital de Francia es París.", "La respuesta recuperada no coincide."
     except Exception as e:
-        pytest.fail(f"Error al insertar o consultar datos en la tabla 'interactions': {e}")
+        pytest.fail(f"Error al insertar o recuperar registros: {e}")
+    finally:
+        # Limpieza: Eliminar el registro de prueba
+        session.query(Interaction).filter_by(prompt="¿Cuál es la capital de Francia?").delete()
+        session.commit()
+        session.close()
